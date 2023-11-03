@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./App.css";
 import { Button, Form, Input, Radio, Space, Switch, Table } from "antd";
+import { getCompletionsFromOpenai } from "./OaiAPI";
+
 const { Column } = Table;
 
 const { TextArea } = Input;
@@ -46,7 +48,7 @@ function App() {
 		setLatestMessage(event.target.value);
 	};
 
-	const handleSubmit = () => {
+	const handleSubmit = async () => {
 		//event.preventDefault();
 		const message = latestMessage;
 		const action = radioValue;
@@ -60,22 +62,17 @@ function App() {
 			finalMessage = taskedMessage;
 		}
 		// setHistoriesMessages([...historyMessages, taskedMessage]);
-
 		//console.log(taskedMessage, radioValue);
-		const api = `http://84.46.248.181:5000/?text=${finalMessage}`;
+		// const api = `http://84.46.248.181:5000/?text=${finalMessage}`;
 		// console.log("API", api);
+		//
 		setLoading(true);
 
-		fetch(api, { timeout: 5000 })
-			.then((response) => response.json())
-			.then((data) => {
-				const newResponse = data["response"];
-				setResponse(newResponse);
-				setLoading(false);
-				return [message, action, taskedMessage, newResponse];
-			})
-			.then((convo) => {
-				const [message, action, taskedMessage, newResponse] = convo;
+
+
+		getCompletionsFromOpenai(finalMessage, ()=>{})
+			.then((newResponse) =>{
+				setResponse(newResponse)
 				setHistoriesReplies([...historyReplies, newResponse]);
 				setHistoriesMessages([...historyMessages, taskedMessage]);
 				let currentContext = historyContexts;
@@ -92,7 +89,35 @@ function App() {
 				setConversations([...conversations, newConvo]);
 				setHistoryContexts(currentContext);
 				form.resetFields();
-			});
+			}).then(()=>{setLoading(false)})
+
+		// fetch(api, { timeout: 5000 })
+		// 	.then((response) => response.json())
+		// 	.then((data) => {
+		// 		const newResponse = data["response"];
+		// 		setResponse(newResponse);
+		// 		setLoading(false);
+		// 		return [message, action, taskedMessage, newResponse];
+		// 	})
+		// 	.then((convo) => {
+		// 		const [message, action, taskedMessage, newResponse] = convo;
+		// 		setHistoriesReplies([...historyReplies, newResponse]);
+		// 		setHistoriesMessages([...historyMessages, taskedMessage]);
+		// 		let currentContext = historyContexts;
+		// 		currentContext += "\nUser:" + taskedMessage + "\n" +
+		// 			newResponse;
+
+		// 		const newConvo = {
+		// 			"Original": message,
+		// 			"User": taskedMessage,
+		// 			"Response": newResponse,
+		// 			"action": action,
+		// 		};
+		// 		// console.log(currentContext)
+		// 		setConversations([...conversations, newConvo]);
+		// 		setHistoryContexts(currentContext);
+		// 		form.resetFields();
+		// 	});
 	};
 
 	const changeRadioValueWithKey = (event) => {
